@@ -1,13 +1,11 @@
 import React from 'react'
-import { useAccount, useBalance, useDisconnect } from 'wagmi'
+import { useAccount, useDisconnect } from 'wagmi'
 import { ExternalLink, LogOut } from 'lucide-react'
+import { useBNBBalance } from '../hooks/useContract'
 
 export function WalletInfo() {
   const { address, connector } = useAccount()
-  const { data: balance } = useBalance({ 
-    address,
-    chainId: 97 // BSC Testnet
-  })
+  const { balance, symbol } = useBNBBalance(address)
   const { disconnect } = useDisconnect()
 
   const formatAddress = (addr: string) => {
@@ -45,7 +43,7 @@ export function WalletInfo() {
           </div>
           <div>
             <div className="text-white font-medium">{connector?.name}</div>
-            <div className="text-white/60 text-sm">Connected</div>
+            <div className="text-white/60 text-sm">Connected to BSC Testnet</div>
           </div>
         </div>
         
@@ -66,10 +64,18 @@ export function WalletInfo() {
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-white/80">BNB Balance:</span>
+            <span className="text-white/80">{symbol} Balance:</span>
             <span className="text-white font-medium">
-              {balance ? `${parseFloat(balance.formatted).toFixed(4)} ${balance.symbol}` : '0.0000 BNB'}
+              {parseFloat(balance).toFixed(4)} {symbol}
             </span>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <span className="text-white/80">Network:</span>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-green-400">BSC Testnet (Live)</span>
+            </div>
           </div>
         </div>
       </div>

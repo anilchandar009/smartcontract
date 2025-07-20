@@ -2,11 +2,9 @@ import React, { useState } from 'react'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 import { ArrowRight, CheckCircle, Loader2, AlertTriangle, TestTube } from 'lucide-react'
 import { 
-  useUSDTContract,
-  useDistributorContract,
-  useMockContract,
-  useUSDTBalance, 
-  useUSDTAllowance 
+  useBNBDistributorContract,
+  useMockBNBContract,
+  useBNBBalance
 } from '../hooks/useContract'
 import { PAYMENT_AMOUNTS, RECIPIENTS } from '../config/contract'
 
@@ -15,87 +13,54 @@ interface PaymentExecutorWithTestModeProps {
   isTestMode?: boolean
 }
 
-export function PaymentExecutorWithTestMode({ onSuccess, isTestMode = true }: PaymentExecutorWithTestModeProps) {
+export function PaymentExecutorWithTestMode({ onSuccess, isTestMode = false }: PaymentExecutorWithTestModeProps) {
   const { address } = useAccount()
-  const [currentStep, setCurrentStep] = useState<'approve' | 'distribute'>('approve')
   const [error, setError] = useState<string>('')
 
-  const { balance: usdtBalance, refetchBalance } = useUSDTBalance(address)
-  const { allowance, refetchAllowance } = useUSDTAllowance(address)
+  const { balance: bnbBalance, refetchBalance } = useBNBBalance(address)
   
   // Choose contract hooks based on test mode
-  const realUSDTContract = useUSDTContract()
-  const realDistributorContract = useDistributorContract()
-  const mockContract = useMockContract()
+  const realContract = useBNBDistributorContract()
+  const mockContract = useMockBNBContract()
 
-  const usdtContract = isTestMode ? mockContract : realUSDTContract
-  const distributorContract = isTestMode ? mockContract : realDistributorContract
-
-  const { isLoading: isApproveConfirming } = useWaitForTransactionReceipt({
-    hash: usdtContract.approveHash,
-    query: {
-      enabled: !!usdtContract.approveHash && !isTestMode,
-    },
-  })
+  const contract = isTestMode ? mockContract : realContract
 
   const { isLoading: isDistributeConfirming } = useWaitForTransactionReceipt({
-    hash: distributorContract.distributeHash,
+    hash: contract.distributeHash,
     query: {
-      enabled: !!distributorContract.distributeHash && !isTestMode,
+      enabled: !!contract.distributeHash && !isTestMode,
     },
   })
 
   React.useEffect(() => {
-    if (usdtContract.approveHash && !isApproveConfirming) {
-      // Refetch allowance after approval
-      if (!isTestMode) {
-        refetchAllowance()
-      }
-      setCurrentStep('distribute')
-    }
-  }, [usdtContract.approveHash, isApproveConfirming, isTestMode, refetchAllowance])
-
-  React.useEffect(() => {
-    if (distributorContract.distributeHash && !isDistributeConfirming) {
+    if (contract.distributeHash && !isDistributeConfirming) {
       // Refetch balance after distribution
       if (!isTestMode) {
         refetchBalance()
       }
-      onSuccess(distributorContract.distributeHash)
+      onSuccess(contract.distributeHash)
     }
-  }, [distributorContract.distributeHash, isDistributeConfirming, onSuccess, isTestMode, refetchBalance])
-
-  const handleApprove = async () => {
-    try {
-      setError('')
-      console.log('Starting approval process...', { isTestMode })
-      await usdtContract.approveUSDT(PAYMENT_AMOUNTS.total)
-    } catch (err: any) {
-      console.error('Approval failed:', err)
-      setError(err.shortMessage || err.message || 'Approval failed')
-    }
-  }
+  }, [contract.distributeHash, isDistributeConfirming, onSuccess, isTestMode, refetchBalance])
 
   const handleDistribute = async () => {
     try {
       setError('')
-      console.log('Starting distribution process...', { isTestMode })
-      await distributorContract.distribute()
+      console.log('Starting BNB distribution process...', { isTestMode })
+      await contract.distribute()
     } catch (err: any) {
       console.error('Distribution failed:', err)
       setError(err.shortMessage || err.message || 'Distribution failed')
     }
   }
 
-  const hasInsufficientBalance = !isTestMode && parseFloat(usdtBalance) < parseFloat(PAYMENT_AMOUNTS.total)
-  const hasInsufficientAllowance = !isTestMode && parseFloat(allowance) < parseFloat(PAYMENT_AMOUNTS.total)
-  const canProceedToDistribute = currentStep === 'distribute' && (isTestMode || !hasInsufficientAllowance)
+  const hasInsufficientBalance = !isTestMode && parseFloat(bnbBalance) < parseFloat(PAYMENT_AMOUNTS.total)
+  const isProcessing = contract.isDistributing || isDistributeConfirming
 
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-xl">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-white">
-          Smart Contract Execution
+          BNB Payment Distribution
         </h2>
         {isTestMode && (
           <div className="flex items-center space-x-2 px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full">
@@ -109,15 +74,15 @@ export function PaymentExecutorWithTestMode({ onSuccess, isTestMode = true }: Pa
       {!isTestMode && (
         <div className="mb-6 p-4 bg-white/5 rounded-lg">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-white/80">Your USDT Balance:</span>
+            <span className="text-white/80">Your BNB Balance:</span>
             <span className={`font-medium ${hasInsufficientBalance ? 'text-red-400' : 'text-green-400'}`}>
-              {parseFloat(usdtBalance).toFixed(4)} USDT
+              {parseFloat(bnbBalance).toFixed(4)} BNB
             </span>
           </div>
           {hasInsufficientBalance && (
             <div className="flex items-center space-x-2 text-red-400 text-sm">
               <AlertTriangle className="w-4 h-4" />
-              <span>Insufficient USDT balance for payment</span>
+              <span>Insufficient BNB balance for payment (need {PAYMENT_AMOUNTS.total} BNB + gas fees)</span>
             </div>
           )}
         </div>
@@ -131,101 +96,93 @@ export function PaymentExecutorWithTestMode({ onSuccess, isTestMode = true }: Pa
             <span className="font-medium">Development Testing</span>
           </div>
           <p className="text-blue-300 text-sm">
-            This is a simulated transaction flow. No real blockchain interaction will occur.
+            This is a simulated BNB transaction flow. No real blockchain interaction will occur.
             Perfect for testing the UI and user experience.
+          </p>
+        </div>
+      )}
+
+      {/* Real Mode Info */}
+      {!isTestMode && (
+        <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
+          <div className="flex items-center space-x-2 text-green-400 mb-2">
+            <CheckCircle className="w-5 h-5" />
+            <span className="font-medium">Live BSC Testnet</span>
+          </div>
+          <p className="text-green-300 text-sm">
+            Real blockchain transactions on BSC Testnet. Make sure you have sufficient test BNB for payment and gas fees.
           </p>
         </div>
       )}
 
       {/* Payment Distribution Preview */}
       <div className="mb-6 p-4 bg-white/5 rounded-lg">
-        <h3 className="text-white font-medium mb-3">Payment Distribution:</h3>
+        <h3 className="text-white font-medium mb-3">BNB Payment Distribution:</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between items-center">
             <span className="text-white/60">Total Payment:</span>
-            <span className="text-white font-medium">{PAYMENT_AMOUNTS.total} USDT</span>
+            <span className="text-white font-medium">{PAYMENT_AMOUNTS.total} BNB</span>
           </div>
           <div className="flex justify-between items-center text-blue-400">
             <span>→ {RECIPIENTS.address1.slice(0, 8)}...{RECIPIENTS.address1.slice(-6)}</span>
-            <span>{PAYMENT_AMOUNTS.recipient1} USDT</span>
+            <span>{PAYMENT_AMOUNTS.recipient1} BNB</span>
           </div>
           <div className="flex justify-between items-center text-green-400">
             <span>→ {RECIPIENTS.address2.slice(0, 8)}...{RECIPIENTS.address2.slice(-6)}</span>
-            <span>{PAYMENT_AMOUNTS.recipient2} USDT</span>
+            <span>{PAYMENT_AMOUNTS.recipient2} BNB</span>
           </div>
         </div>
       </div>
 
-      {/* Step Indicators */}
-      <div className="flex items-center justify-center mb-6 space-x-4">
-        <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
-          currentStep === 'approve' 
+      {/* Single Step Process */}
+      <div className="flex items-center justify-center mb-6">
+        <div className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm ${
+          isProcessing
             ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
             : 'bg-green-500/20 text-green-400 border border-green-500/30'
         }`}>
-          {currentStep === 'approve' && (usdtContract.isApproving || isApproveConfirming) ? (
+          {isProcessing ? (
             <Loader2 className="w-4 h-4 animate-spin" />
-          ) : currentStep !== 'approve' ? (
-            <CheckCircle className="w-4 h-4" />
           ) : (
-            <div className="w-4 h-4 rounded-full border-2 border-current" />
+            <CheckCircle className="w-4 h-4" />
           )}
-          <span>1. Approve USDT</span>
-        </div>
-        
-        <ArrowRight className="w-4 h-4 text-white/40" />
-        
-        <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
-          canProceedToDistribute
-            ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-            : 'bg-white/10 text-white/40 border border-white/20'
-        }`}>
-          {canProceedToDistribute && (distributorContract.isDistributing || isDistributeConfirming) && (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          )}
-          <span>2. Execute Payment</span>
+          <span>Send BNB & Distribute</span>
         </div>
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Button */}
       <div className="space-y-4">
-        {currentStep === 'approve' && (
-          <button
-            onClick={handleApprove}
-            disabled={usdtContract.isApproving || isApproveConfirming || (!isTestMode && hasInsufficientBalance)}
-            className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 
-                     disabled:cursor-not-allowed text-white font-medium rounded-xl 
-                     transition-all duration-200 flex items-center justify-center space-x-2"
-          >
-            {usdtContract.isApproving || isApproveConfirming ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>{usdtContract.isApproving ? 'Approving...' : 'Confirming...'}</span>
-              </>
-            ) : (
-              <span>{isTestMode ? 'Simulate' : 'Approve'} {PAYMENT_AMOUNTS.total} USDT</span>
-            )}
-          </button>
-        )}
+        <button
+          onClick={handleDistribute}
+          disabled={isProcessing || (!isTestMode && hasInsufficientBalance)}
+          className="w-full py-4 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 
+                   disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed 
+                   text-white font-medium rounded-xl transition-all duration-200 
+                   flex items-center justify-center space-x-2"
+        >
+          {isProcessing ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>{contract.isDistributing ? 'Processing...' : 'Confirming...'}</span>
+            </>
+          ) : (
+            <>
+              <span>{isTestMode ? 'Simulate' : 'Send'} {PAYMENT_AMOUNTS.total} BNB</span>
+              <ArrowRight className="w-5 h-5" />
+            </>
+          )}
+        </button>
+      </div>
 
-        {canProceedToDistribute && (
-          <button
-            onClick={handleDistribute}
-            disabled={distributorContract.isDistributing || isDistributeConfirming}
-            className="w-full py-4 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 
-                     disabled:cursor-not-allowed text-white font-medium rounded-xl 
-                     transition-all duration-200 flex items-center justify-center space-x-2"
-          >
-            {distributorContract.isDistributing || isDistributeConfirming ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>{distributorContract.isDistributing ? 'Executing...' : 'Confirming...'}</span>
-              </>
-            ) : (
-              <span>{isTestMode ? 'Simulate' : 'Execute'} Payment Distribution</span>
-            )}
-          </button>
-        )}
+      {/* Benefits of BNB Payment */}
+      <div className="mt-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
+        <h4 className="text-green-400 font-medium mb-2">BNB Payment Benefits:</h4>
+        <ul className="text-green-300 text-sm space-y-1">
+          <li>• No token approval required</li>
+          <li>• Single transaction process</li>
+          <li>• Lower gas fees</li>
+          <li>• Instant distribution</li>
+        </ul>
       </div>
 
       {/* Error Display */}
@@ -248,11 +205,10 @@ export function PaymentExecutorWithTestMode({ onSuccess, isTestMode = true }: Pa
       {!isTestMode && (
         <div className="mt-4 p-4 bg-white/5 rounded-lg text-xs text-white/60">
           <div>Debug Info:</div>
-          <div>USDT Balance: {usdtBalance}</div>
-          <div>Allowance: {allowance}</div>
-          <div>Current Step: {currentStep}</div>
-          <div>Approve Hash: {usdtContract.approveHash || 'None'}</div>
-          <div>Distribute Hash: {distributorContract.distributeHash || 'None'}</div>
+          <div>BNB Balance: {bnbBalance}</div>
+          <div>Required: {PAYMENT_AMOUNTS.total} BNB</div>
+          <div>Distribute Hash: {contract.distributeHash || 'None'}</div>
+          <div>Is Processing: {isProcessing.toString()}</div>
         </div>
       )}
     </div>

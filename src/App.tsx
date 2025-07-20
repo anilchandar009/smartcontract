@@ -17,8 +17,8 @@ function AppContent() {
   const { isConnected } = useAccount()
   const [showWalletSelector, setShowWalletSelector] = useState(!isConnected)
   const [successTxHash, setSuccessTxHash] = useState<string>('')
-  const [isTestMode, setIsTestMode] = useState(false) // Start with real mode
-  const [showContractHelper, setShowContractHelper] = useState(true)
+  const [isTestMode, setIsTestMode] = useState(false) // Real blockchain mode by default
+  const [showContractHelper, setShowContractHelper] = useState(false) // Hide by default for real usage
 
   React.useEffect(() => {
     setShowWalletSelector(!isConnected)
@@ -56,11 +56,11 @@ function AppContent() {
         {/* Header */}
         <div className="text-center space-y-4">
           <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight">
-            Smart Contract Payment Portal
+            BNB Payment Distribution Portal
           </h1>
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl">
             <div className="text-2xl font-semibold text-white">
-              Total Payment Required: <span className="text-blue-400">{PAYMENT_AMOUNTS.total} USDT</span>
+              Total Payment Required: <span className="text-yellow-400">{PAYMENT_AMOUNTS.total} BNB</span>
             </div>
             <div className="text-white/60 mt-2">
               BSC Testnet • Automatic Distribution {isTestMode && '• Test Mode'}

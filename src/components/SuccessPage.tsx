@@ -19,7 +19,7 @@ export function SuccessPage({ txHash, onReset }: SuccessPageProps) {
           </div>
         </div>
         <h2 className="text-3xl font-bold text-white mb-2">Payment Successful!</h2>
-        <p className="text-white/80">Your USDT payment has been distributed successfully</p>
+        <p className="text-white/80">Your BNB payment has been distributed successfully</p>
       </div>
 
       {/* Payment Summary */}
@@ -29,7 +29,7 @@ export function SuccessPage({ txHash, onReset }: SuccessPageProps) {
         <div className="space-y-4">
           <div className="text-center p-4 bg-blue-500/20 rounded-lg border border-blue-500/30">
             <div className="text-2xl font-bold text-blue-400 mb-1">
-              {PAYMENT_AMOUNTS.total} USDT
+              {PAYMENT_AMOUNTS.total} BNB
             </div>
             <div className="text-white/60 text-sm">Total Paid</div>
           </div>
@@ -42,7 +42,7 @@ export function SuccessPage({ txHash, onReset }: SuccessPageProps) {
             <div className="p-4 bg-green-500/20 rounded-lg border border-green-500/30">
               <div className="text-center">
                 <div className="text-lg font-bold text-green-400 mb-1">
-                  {PAYMENT_AMOUNTS.recipient1} USDT
+                  {PAYMENT_AMOUNTS.recipient1} BNB
                 </div>
                 <div className="text-white/60 text-xs font-mono break-all">
                   {RECIPIENTS.address1}
@@ -53,7 +53,7 @@ export function SuccessPage({ txHash, onReset }: SuccessPageProps) {
             <div className="p-4 bg-orange-500/20 rounded-lg border border-orange-500/30">
               <div className="text-center">
                 <div className="text-lg font-bold text-orange-400 mb-1">
-                  {PAYMENT_AMOUNTS.recipient2} USDT
+                  {PAYMENT_AMOUNTS.recipient2} BNB
                 </div>
                 <div className="text-white/60 text-xs font-mono break-all">
                   {RECIPIENTS.address2}
@@ -87,6 +87,10 @@ export function SuccessPage({ txHash, onReset }: SuccessPageProps) {
           <div className="flex items-center justify-between">
             <span className="text-white/80">Network:</span>
             <span className="text-white">BSC Testnet</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-white/80">Currency:</span>
+            <span className="text-yellow-400">BNB</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-white/80">Status:</span>

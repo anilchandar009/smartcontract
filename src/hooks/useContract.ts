@@ -1,51 +1,25 @@
-import { useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useWriteContract, useReadContract, useBalance } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { useState } from 'react'
-import { CONTRACT_ADDRESS, CONTRACT_ABI, USDT_ADDRESS, USDT_ABI } from '../config/contract'
+import { CONTRACT_ADDRESS, CONTRACT_ABI, PAYMENT_AMOUNTS } from '../config/contract'
 
-export function useUSDTContract() {
-  const { writeContract: writeUSDT, data: approveHash, isPending: isApproving, error: approveError } = useWriteContract()
-  
-  const approveUSDT = async (amount: string) => {
-    try {
-      const amountWei = parseUnits(amount, 18)
-      console.log('Approving USDT:', {
-        amount,
-        amountWei: amountWei.toString(),
-        usdtAddress: USDT_ADDRESS,
-        contractAddress: CONTRACT_ADDRESS
-      })
-      
-      return writeUSDT({
-        address: USDT_ADDRESS as `0x${string}`,
-        abi: USDT_ABI,
-        functionName: 'approve',
-        args: [CONTRACT_ADDRESS, amountWei],
-      })
-    } catch (error) {
-      console.error('Approval error:', error)
-      throw error
-    }
-  }
-
-  return {
-    approveUSDT,
-    approveHash,
-    isApproving,
-    approveError
-  }
-}
-
-export function useDistributorContract() {
-  const { writeContract: writeContract, data: distributeHash, isPending: isDistributing, error: distributeError } = useWriteContract()
+export function useBNBDistributorContract() {
+  const { writeContract, data: distributeHash, isPending: isDistributing, error: distributeError } = useWriteContract()
   
   const distribute = async () => {
     try {
-      console.log('Executing distribute function on contract:', CONTRACT_ADDRESS)
+      const amountWei = parseUnits(PAYMENT_AMOUNTS.total, 18)
+      console.log('Executing BNB distribute function:', {
+        contractAddress: CONTRACT_ADDRESS,
+        amount: PAYMENT_AMOUNTS.total,
+        amountWei: amountWei.toString()
+      })
+      
       return writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: CONTRACT_ABI,
         functionName: 'distribute',
+        value: amountWei,
       })
     } catch (error) {
       console.error('Distribution error:', error)
@@ -61,12 +35,10 @@ export function useDistributorContract() {
   }
 }
 
-export function useUSDTBalance(address: `0x${string}` | undefined) {
-  const { data: balance, refetch: refetchBalance } = useReadContract({
-    address: USDT_ADDRESS as `0x${string}`,
-    abi: USDT_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
+export function useBNBBalance(address: `0x${string}` | undefined) {
+  const { data: balance, refetch: refetchBalance } = useBalance({
+    address,
+    chainId: 97, // BSC Testnet
     query: {
       enabled: !!address,
       refetchInterval: 5000, // Refetch every 5 seconds
@@ -74,44 +46,31 @@ export function useUSDTBalance(address: `0x${string}` | undefined) {
   })
 
   return {
-    balance: balance ? formatUnits(balance as bigint, 18) : '0',
+    balance: balance ? formatUnits(balance.value, 18) : '0',
+    symbol: balance?.symbol || 'BNB',
     refetchBalance
   }
 }
 
-export function useUSDTAllowance(owner: `0x${string}` | undefined) {
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: USDT_ADDRESS as `0x${string}`,
-    abi: USDT_ABI,
-    functionName: 'allowance',
-    args: owner ? [owner, CONTRACT_ADDRESS] : undefined,
+export function useContractInfo() {
+  const { data: contractInfo } = useReadContract({
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    abi: CONTRACT_ABI,
+    functionName: 'getContractInfo',
     query: {
-      enabled: !!owner,
-      refetchInterval: 5000, // Refetch every 5 seconds
+      enabled: !!CONTRACT_ADDRESS && CONTRACT_ADDRESS !== "0x1234567890123456789012345678901234567890",
     },
   })
 
   return {
-    allowance: allowance ? formatUnits(allowance as bigint, 18) : '0',
-    refetchAllowance
+    contractInfo: contractInfo as [string, string, bigint, bigint, bigint] | undefined
   }
 }
 
 // Mock contract for testing UI without blockchain interaction
-export function useMockContract() {
-  const [isApproving, setIsApproving] = useState(false)
+export function useMockBNBContract() {
   const [isDistributing, setIsDistributing] = useState(false)
-  const [approveHash, setApproveHash] = useState<string>()
   const [distributeHash, setDistributeHash] = useState<string>()
-
-  const mockApprove = async () => {
-    setIsApproving(true)
-    // Simulate approval transaction
-    setTimeout(() => {
-      setApproveHash('0x' + Math.random().toString(16).substr(2, 64))
-      setIsApproving(false)
-    }, 3000)
-  }
 
   const mockDistribute = async () => {
     setIsDistributing(true)
@@ -123,11 +82,15 @@ export function useMockContract() {
   }
 
   return {
-    approveUSDT: mockApprove,
     distribute: mockDistribute,
-    approveHash,
     distributeHash,
-    isApproving,
     isDistributing
   }
 }
+
+// Legacy exports for backward compatibility
+export const useUSDTContract = useBNBDistributorContract
+export const useDistributorContract = useBNBDistributorContract
+export const useUSDTBalance = useBNBBalance
+export const useUSDTAllowance = () => ({ allowance: '999999', refetchAllowance: () => {} })
+export const useMockContract = useMockBNBContract

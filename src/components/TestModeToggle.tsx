@@ -6,7 +6,7 @@ interface TestModeToggleProps {
 }
 
 export function TestModeToggle({ onModeChange }: TestModeToggleProps) {
-  const [isTestMode, setIsTestMode] = useState(true)
+  const [isTestMode, setIsTestMode] = useState(false) // Start with real mode
 
   const handleToggle = () => {
     const newMode = !isTestMode

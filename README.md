@@ -1,15 +1,16 @@
 # Smart Contract Payment Portal
 
-A React-based application that integrates with a BNB BEP-20 smart contract on BSC Testnet for automated USDT payment distribution.
+A React-based application that integrates with a BNB smart contract on BSC Testnet for automated BNB payment distribution.
 
 ## Features
 
 - **Multi-Wallet Support**: Connect with MetaMask, WalletConnect, and other Web3 wallets
 - **BSC Testnet Integration**: Full support for Binance Smart Chain Testnet
-- **Smart Contract Automation**: Automatically distributes USDT payments to multiple recipients
-- **Real-time Balance Tracking**: Monitor USDT balance and transaction status
+- **Smart Contract Automation**: Automatically distributes BNB payments to multiple recipients
+- **Real-time Balance Tracking**: Monitor BNB balance and transaction status
 - **Responsive Design**: Beautiful, mobile-friendly interface with smooth animations
 - **Transaction Transparency**: Direct links to BSCScan for transaction verification
+- **Test Mode**: Development mode for UI testing without blockchain interaction
 
 ## Tech Stack
 
@@ -36,26 +37,28 @@ A React-based application that integrates with a BNB BEP-20 smart contract on BS
 
 4. **Configure MetaMask**
    - Add BSC Testnet network
-   - Get test BNB and USDT from faucets
+   - Get test BNB from faucets
 
 ## Smart Contract Details
 
-**Contract Address**: `0x1234567890123456789012345678901234567890` (Update after deployment)
+**Contract Address**: Update `CONTRACT_ADDRESS` in `src/config/contract.ts` after deployment
 
 **Functions**:
-- `distribute()`: Distributes 0.05 USDT to two recipients (0.02 + 0.03)
+- `distribute()`: Distributes 0.05 BNB to two recipients (0.02 + 0.03)
 - `getContractInfo()`: Returns contract configuration details
+- `getBalance()`: Returns contract BNB balance
+- `emergencyWithdraw()`: Emergency function for authorized users
 
 **Recipients**:
-- Address 1: `0xf52f981dafb26dc2ce86e48fbf6fbc2e35cd9444` → 0.02 USDT
-- Address 2: `0x73D5906Cbf60ecD8b5C0F89ae25fbEabeFdc894E` → 0.03 USDT
+- Address 1: `0xf52f981dafb26dc2ce86e48fbf6fbc2e35cd9444` → 0.02 BNB
+- Address 2: `0x73D5906Cbf60ecD8b5C0F89ae25fbEabeFdc894E` → 0.03 BNB
 
 ## Payment Flow
 
 1. **Connect Wallet**: Choose from available Web3 wallets
 2. **Wallet Verification**: Check BNB balance and network connection
-3. **USDT Approval**: Approve 0.05 USDT spending to the smart contract
-4. **Payment Execution**: Execute the `distribute()` function
+3. **BNB Payment**: Send 0.05 BNB to the smart contract
+4. **Automatic Distribution**: Contract automatically distributes to recipients
 5. **Success Confirmation**: View transaction details and BSCScan link
 
 ## Development
